@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Trade Tracker</title>
+<link rel="manifest" href="/manifest.json">
+<link rel="apple-touch-icon" href="/icon-192.png">
+<meta name="theme-color" content="#7C5CFC">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap');
+
+  :root {
+    --bg: #F5F3FF;
+    --purple: #7C5CFC;
+    --purple-dark: #5B3FE0;
+    --blue: #3B82F6;
+    --orange: #FF8A3D;
+    --pink: #FF5C93;
+    --green: #16C784;
+    --red: #FF5C5C;
+    --ink: #1A1A2E;
+    --ink-soft: #6B6B85;
+    --card: #FFFFFF;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--ink);
+    font-family: 'Inter', sans-serif;
+    max-width: 420px;
+    margin: 0 auto;
+    min-height: 100vh;
+    padding-bottom: 40px;
+  }
+
+  .topbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px 20px 4px;
+  }
+  .brand { display: flex; align-items: center; gap: 8px; }
+  .brand-mark {
+    width: 30px; height: 30px;
+    border-radius: 9px;
+    background: linear-gradient(135deg, var(--purple), var(--pink));
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'Space Grotesk', sans-serif;
+    font-weight: 700;
+    color: white;
+    font-size: 15px;
+  }
+  .brand-name { font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 16px; }
+
+  .live-pill {
+    display: flex; align-items: center; gap: 5px;
+    background: rgba(22,199,132,0.12);
+    color: var(--green);
+    font-size: 11px;
+    font-weight: 700;
+    padding: 5px 10px;
+    border-radius: 20px;
+  }
+  .live-pill.offline { background: rgba(255,92,92,0.12); color: var(--red); }
+  .live-pill::before {
+    content: '';
+    width: 6px; height: 6px;
+    background: currentColor;
+    border-radius: 50%;
+    animation: pulse 1.6s infinite;
+  }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
+
+  .hero-card {
+    margin: 18px 20px 0;
+    border-radius: 20px;
+    padding: 22px;
+    background: linear-gradient(135deg, var(--purple) 0%, var(--purple-dark) 55%, #4527B0 100%);
+    color: white;
+    position: relative;
+    overflow: hidden;
+  }
+  .hero-card::after {
+    content: '';
+    position: absolute;
+    top: -40px; right: -40px;
+    width: 140px; height: 140px;
+    background: radial-gradient(circle, rgba(255,138,61,0.35), transparent 70%);
+    border-radius: 50%;
+  }
+  .hero-label { font-size: 12px; opacity: 0.75; font-weight: 500; letter-spacing: 0.03em; }
+  .hero-value { font-family: 'Space Grotesk', sans-serif; font-size: 38px; font-weight: 700; margin-top: 6px; position: relative; }
+  .hero-change {
+    margin-top: 10px;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    background: rgba(22,199,132,0.25);
+    color: #6FF3B8;
+    font-size: 13px;
+    font-weight: 700;
+    padding: 5px 11px;
+    border-radius: 20px;
+  }
+  .hero-change.negative { background: rgba(255,92,92,0.25); color: #FFB3B3; }
+
+  .stat-strip { display: flex; gap: 10px; padding: 16px 20px 0; overflow-x: auto; }
+  .stat-chip { flex: 1; min-width: 92px; background: var(--card); border-radius: 14px; padding: 12px 14px; box-shadow: 0 2px 10px rgba(26,26,46,0.06); }
+  .stat-chip .dot { width: 8px; height: 8px; border-radius: 50%; margin-bottom: 8px; }
+  .stat-chip .k { font-size: 10px; color: var(--ink-soft); text-transform: uppercase; letter-spacing: 0.04em; }
+  .stat-chip .v { font-family: 'Space Grotesk', sans-serif; font-size: 16px; font-weight: 700; margin-top: 3px; }
+
+  .section { padding: 26px 20px 0; }
+  .section-title { font-family: 'Space Grotesk', sans-serif; font-size: 15px; font-weight: 700; margin-bottom: 14px; }
+
+  .position-card { background: var(--card); border-radius: 18px; padding: 16px; box-shadow: 0 2px 10px rgba(26,26,46,0.06); border-left: 4px solid var(--green); }
+  .position-card.sell { border-left-color: var(--red); }
+  .position-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+  .position-symbol { font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 15px; }
+  .badge { font-size: 11px; font-weight: 700; padding: 4px 10px; border-radius: 20px; letter-spacing: 0.02em; }
+  .badge.buy { background: rgba(22,199,132,0.14); color: var(--green); }
+  .badge.sell { background: rgba(255,92,92,0.14); color: var(--red); }
+  .position-rows { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
+  .position-rows .k { font-size: 10px; color: var(--ink-soft); text-transform: uppercase; letter-spacing: 0.04em; }
+  .position-rows .v { font-weight: 600; font-size: 13px; margin-top: 3px; }
+  .position-pnl { margin-top: 14px; padding-top: 14px; border-top: 1px dashed #E4E1F5; display: flex; justify-content: space-between; align-items: center; }
+  .position-pnl .label { font-size: 11px; color: var(--ink-soft); text-transform: uppercase; letter-spacing: 0.04em; }
+  .position-pnl .v { font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 17px; }
+
+  .empty-state { background: var(--card); border-radius: 18px; padding: 24px 16px; text-align: center; color: var(--ink-soft); font-size: 13px; box-shadow: 0 2px 10px rgba(26,26,46,0.06); }
+
+  .history-card { background: var(--card); border-radius: 18px; box-shadow: 0 2px 10px rgba(26,26,46,0.06); padding: 4px 16px; }
+  .history-row { display: flex; justify-content: space-between; align-items: center; padding: 13px 0; border-bottom: 1px solid #F0EEFA; }
+  .history-row:last-child { border-bottom: none; }
+  .history-left { display: flex; align-items: center; gap: 11px; }
+  .history-icon { width: 34px; height: 34px; border-radius: 11px; display: flex; align-items: center; justify-content: center; font-size: 14px; }
+  .history-icon.win { background: rgba(22,199,132,0.14); }
+  .history-icon.loss { background: rgba(255,92,92,0.14); }
+  .history-meta .sym { font-size: 13px; font-weight: 600; }
+  .history-meta .time { font-size: 11px; color: var(--ink-soft); margin-top: 2px; }
+  .history-pnl { font-family: 'Space Grotesk', sans-serif; font-size: 14px; font-weight: 700; }
+
+  .account-toggle {
+    display: flex; gap: 6px; padding: 4px 20px 0;
+  }
+  .account-toggle button {
+    flex: 1; padding: 9px; border-radius: 12px; border: none;
+    font-family: 'Inter', sans-serif; font-weight: 700; font-size: 13px;
+    background: white; color: var(--ink-soft); box-shadow: 0 2px 8px rgba(26,26,46,0.06);
+  }
+  .account-toggle button.active {
+    background: var(--purple); color: white;
+  }
+
+  .footer-note { text-align: center; color: var(--ink-soft); font-size: 11px; padding: 24px 20px 0; line-height: 1.6; }
+
+  .log-card { background: var(--card); border-radius: 18px; box-shadow: 0 2px 10px rgba(26,26,46,0.06); padding: 4px 16px; max-height: 340px; overflow-y: auto; }
+  .log-row { padding: 11px 0; border-bottom: 1px solid #F0EEFA; }
+  .log-row:last-child { border-bottom: none; }
+  .log-row-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; }
+  .log-action { font-size: 12px; font-weight: 700; }
+  .log-action.taken { color: var(--green); }
+  .log-action.skipped { color: var(--ink-soft); }
+  .log-time { font-size: 10px; color: var(--ink-soft); }
+  .log-reason { font-size: 11px; color: var(--ink-soft); }
+  .log-price { font-size: 11px; font-weight: 600; margin-top: 2px; }
+</style>
+</head>
+<body>
+
+  <div class="topbar">
+    <div class="brand">
+      <div class="brand-mark">T</div>
+      <div class="brand-name">Trade Tracker</div>
+    </div>
+    <div class="live-pill" id="live-pill">Connecting…</div>
+  </div>
+
+  <div class="account-toggle">
+    <button id="tab-demo" class="active">Demo</button>
+    <button id="tab-real">Real</button>
+  </div>
+
+  <button id="install-btn" style="display:none; margin: 12px 20px 0; background: var(--purple); color: white; border: none; border-radius: 12px; padding: 10px 16px; font-family: 'Inter', sans-serif; font-weight: 600; font-size: 13px; width: calc(100% - 40px);">
+    ⬇ Install App
+  </button>
+
+  <div class="hero-card">
+    <div class="hero-label">Account Balance</div>
+    <div class="hero-value" id="balance-value">--</div>
+    <div class="hero-change" id="balance-change">-- today</div>
+  </div>
+
+  <div class="stat-strip">
+    <div class="stat-chip">
+      <div class="dot" style="background:var(--blue)"></div>
+      <div class="k">Equity</div>
+      <div class="v" id="stat-equity">--</div>
+    </div>
+    <div class="stat-chip">
+      <div class="dot" style="background:var(--orange)"></div>
+      <div class="k">Free Margin</div>
+      <div class="v" id="stat-margin">--</div>
+    </div>
+    <div class="stat-chip">
+      <div class="dot" style="background:var(--green)"></div>
+      <div class="k">Win Rate</div>
+      <div class="v" id="stat-winrate">--</div>
+    </div>
+    <div class="stat-chip">
+      <div class="dot" style="background:var(--pink)"></div>
+      <div class="k">Trades</div>
+      <div class="v" id="stat-trades">--</div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">Open Position</div>
+    <div id="position-container">
+      <div class="empty-state">No open position right now</div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">Recent Trades</div>
+    <div id="history-container">
+      <div class="empty-state">No trades yet</div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title" style="display:flex; justify-content:space-between; align-items:center;">
+      <span>Activity Log</span>
+    </div>
+    <a href="/history.html?accountType=demo" id="history-link" style="display:block; text-align:center; background:var(--purple); color:white; font-weight:700; font-size:13px; padding:14px; border-radius:14px; text-decoration:none;">
+      View Full History →
+    </a>
+  </div>
+
+  <div class="footer-note" id="footer-note">Waiting for data from your bot…</div>
+
+<script>
+  const API_URL = '/api/status'; // same origin - dashboard and backend are on the same service
+
+  let currentAccount = localStorage.getItem('accountType') || 'demo';
+
+  function setAccountTab(account) {
+    currentAccount = account;
+    localStorage.setItem('accountType', account);
+    document.getElementById('tab-demo').classList.toggle('active', account === 'demo');
+    document.getElementById('tab-real').classList.toggle('active', account === 'real');
+    document.getElementById('history-link').href = `/history.html?accountType=${account}`;
+    refresh();
+  }
+
+  document.getElementById('tab-demo').addEventListener('click', () => setAccountTab('demo'));
+  document.getElementById('tab-real').addEventListener('click', () => setAccountTab('real'));
+  setAccountTab(currentAccount); // apply saved/default selection on load
+
+  function fmtMoney(n) {
+    if (n === null || n === undefined) return '--';
+    return '$' + Number(n).toFixed(2);
+  }
+
+  function fmtTime(iso) {
+    if (!iso) return '';
+    const d = new Date(iso);
+    return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  }
+
+  async function refresh() {
+    try {
+      const res = await fetch(`${API_URL}?accountType=${currentAccount}`);
+      const data = await res.json();
+
+      const livePill = document.getElementById('live-pill');
+      if (data.connected) {
+        livePill.textContent = 'Live';
+        livePill.classList.remove('offline');
+      } else {
+        livePill.textContent = 'Offline';
+        livePill.classList.add('offline');
+      }
+
+      // Balance
+      document.getElementById('balance-value').textContent = fmtMoney(data.account.balance);
+      document.getElementById('stat-equity').textContent = fmtMoney(data.account.equity);
+      document.getElementById('stat-margin').textContent = fmtMoney(data.account.freeMargin);
+      document.getElementById('stat-winrate').textContent = (data.stats.winRateToday ?? 0) + '%';
+      document.getElementById('stat-trades').textContent = (data.stats.tradesToday ?? 0) + ' today';
+
+      // Open position
+      const posContainer = document.getElementById('position-container');
+      if (data.openPosition) {
+        const p = data.openPosition;
+        const isBuy = p.type === 'buy';
+        const pnlColor = p.pnl >= 0 ? 'var(--green)' : 'var(--red)';
+        posContainer.innerHTML = `
+          <div class="position-card ${isBuy ? '' : 'sell'}">
+            <div class="position-top">
+              <span class="position-symbol">${p.symbol}</span>
+              <span class="badge ${isBuy ? 'buy' : 'sell'}">${isBuy ? 'BUY' : 'SELL'}</span>
+            </div>
+            <div class="position-rows">
+              <div><div class="k">Entry</div><div class="v">${p.entryPrice}</div></div>
+              <div><div class="k">Current</div><div class="v">${p.currentPrice}</div></div>
+              <div><div class="k">Lot</div><div class="v">${p.lot}</div></div>
+            </div>
+            <div class="position-pnl">
+              <span class="label">Unrealized P/L</span>
+              <span class="v" style="color:${pnlColor}">${p.pnl >= 0 ? '+' : ''}${fmtMoney(p.pnl)}</span>
+            </div>
+          </div>
+        `;
+      } else {
+        posContainer.innerHTML = `<div class="empty-state">No open position right now</div>`;
+      }
+
+      // Recent trades (from the database, survives bot restarts)
+      const historyContainer = document.getElementById('history-container');
+      try {
+        const tradesRes = await fetch(`/api/trades?accountType=${currentAccount}&limit=10`);
+        const trades = await tradesRes.json();
+        if (trades && trades.length > 0) {
+          const rows = trades.map(t => {
+            const pnl = Number(t.profit);
+            const win = pnl >= 0;
+            return `
+              <div class="history-row">
+                <div class="history-left">
+                  <div class="history-icon ${win ? 'win' : 'loss'}">${win ? '🟢' : '🔴'}</div>
+                  <div class="history-meta">
+                    <div class="sym">${t.symbol} · ${t.type.toUpperCase()}</div>
+                    <div class="time">${fmtTime(t.created_at)}</div>
+                  </div>
+                </div>
+                <div class="history-pnl" style="color:${win ? 'var(--green)' : 'var(--red)'}">${win ? '+' : ''}${fmtMoney(pnl)}</div>
+              </div>
+            `;
+          }).join('');
+          historyContainer.innerHTML = `<div class="history-card">${rows}</div>`;
+        } else {
+          historyContainer.innerHTML = `<div class="empty-state">No trades yet</div>`;
+        }
+      } catch (e) {
+        historyContainer.innerHTML = `<div class="empty-state">No trades yet</div>`;
+      }
+
+      document.getElementById('footer-note').textContent =
+        data.lastUpdated ? `Last update: ${fmtTime(data.lastUpdated)} · Updates every 5s` : 'Waiting for data from your bot…';
+
+    } catch (err) {
+      document.getElementById('live-pill').textContent = 'Offline';
+      document.getElementById('live-pill').classList.add('offline');
+      console.error('Failed to fetch status', err);
+    }
+  }
+
+  refresh();
+  setInterval(refresh, 5000);
+
+  // --- Install button logic ---
+  let deferredInstallPrompt = null;
+  const installBtn = document.getElementById('install-btn');
+
+  window.addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault();
+    deferredInstallPrompt = e;
+    installBtn.style.display = 'block';
+  });
+
+  installBtn.addEventListener('click', async () => {
+    if (!deferredInstallPrompt) return;
+    deferredInstallPrompt.prompt();
+    await deferredInstallPrompt.userChoice;
+    deferredInstallPrompt = null;
+    installBtn.style.display = 'none';
+  });
+
+  window.addEventListener('appinstalled', () => {
+    installBtn.style.display = 'none';
+  });
+
+  // Register the service worker (required for installability)
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('/sw.js').catch(() => {});
+  }
+</script>
+
+</body>
+</html>
