@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>History - Trade Tracker</title>
+<link rel="apple-touch-icon" href="/icon-192.png">
+<meta name="theme-color" content="#1A1A2E">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@600;700&family=JetBrains+Mono:wght@400;500;600&family=Inter:wght@400;500;600;700&display=swap');
+
+  :root {
+    --bg: #14161F;
+    --panel: #1A1D29;
+    --border: #2A2E3D;
+    --green: #3FBF7F;
+    --red: #FF5C5C;
+    --purple: #9C8CFF;
+    --text: #E8E6E1;
+    --text-dim: #7C839A;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Inter', sans-serif;
+    max-width: 480px;
+    margin: 0 auto;
+    padding-bottom: 40px;
+  }
+  .topbar {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 18px 16px 10px;
+    position: sticky; top: 0; background: var(--bg); z-index: 5;
+  }
+  .back { color: var(--text-dim); font-size: 20px; text-decoration: none; }
+  .title { font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 16px; }
+  .dl-btn {
+    background: var(--purple); color: #14161F; font-weight: 700; font-size: 11px;
+    padding: 7px 12px; border-radius: 20px; text-decoration: none;
+  }
+  .filters { display:flex; gap:6px; padding: 4px 16px 12px; overflow-x:auto; }
+  .chip {
+    font-size: 11px; font-family:'JetBrains Mono',monospace; color: var(--text-dim);
+    background: var(--panel); border: 1px solid var(--border);
+    padding: 5px 10px; border-radius: 20px; white-space: nowrap; cursor: pointer;
+  }
+  .chip.active { background: var(--purple); color: #14161F; border-color: var(--purple); }
+
+  .grid-wrap {
+    margin: 0 12px; background: var(--panel); border-radius: 10px;
+    border: 1px solid var(--border); overflow-x: auto;
+  }
+  table { width: 100%; border-collapse: collapse; font-family: 'JetBrains Mono', monospace; font-size: 11px; white-space: nowrap; }
+  th {
+    background: #20232F; color: var(--text-dim); text-align: left;
+    padding: 8px 10px; font-weight: 500; position: sticky; top: 0;
+  }
+  td { padding: 7px 10px; border-top: 1px solid var(--border); }
+  .up { color: var(--green); }
+  .down { color: var(--red); }
+  .skip { color: var(--text-dim); }
+  .taken { color: var(--green); font-weight: 600; }
+
+  .status-line {
+    text-align: center; color: var(--text-dim); font-size: 11px;
+    padding: 16px; font-family: 'JetBrains Mono', monospace;
+  }
+</style>
+</head>
+<body>
+
+  <div class="topbar">
+    <div style="display:flex; align-items:center; gap:10px;">
+      <a href="/" class="back">←</a>
+      <div class="title">Full History <span id="account-label" style="color:var(--purple); font-size:12px;">(DEMO)</span></div>
+    </div>
+    <div style="display:flex; gap:8px;">
+      <a href="/api/logs/export" id="csv-link" class="dl-btn" style="background:#2A2E3D; color:var(--text);">⬇ CSV</a>
+      <a href="/api/logs/export-html" id="report-link" class="dl-btn">📄 Styled Report</a>
+    </div>
+  </div>
+
+  <div class="filters">
+    <div class="chip active" data-filter="all">All</div>
+    <div class="chip" data-filter="taken">Trades only</div>
+    <div class="chip" data-filter="uptrend">Uptrend</div>
+    <div class="chip" data-filter="downtrend">Downtrend</div>
+  </div>
+
+  <div class="grid-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>TIME</th>
+          <th>PRICE</th>
+          <th>RSI</th>
+          <th>TREND</th>
+          <th>SIGNAL</th>
+          <th>ACT</th>
+        </tr>
+      </thead>
+      <tbody id="log-body">
+        <tr><td colspan="6" style="text-align:center; color:var(--text-dim); padding:20px;">Loading…</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="status-line" id="status-line">Loading history…</div>
+
+<script>
+  let allLogs = [];
+  let activeFilter = 'all';
+
+  // Get account type from URL (?accountType=demo|real), falling back to localStorage
+  const urlParams = new URLSearchParams(window.location.search);
+  const accountType = urlParams.get('accountType') || localStorage.getItem('accountType') || 'demo';
+  localStorage.setItem('accountType', accountType);
+
+  document.getElementById('account-label').textContent = `(${accountType.toUpperCase()})`;
+  document.getElementById('csv-link').href = `/api/logs/export?accountType=${accountType}`;
+  document.getElementById('report-link').href = `/api/logs/export-html?accountType=${accountType}`;
+  document.querySelector('.back').href = '/'; // dashboard remembers the tab itself via localStorage
+
+  function fmtTime(iso) {
+    const d = new Date(iso);
+    return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+  }
+
+  function render() {
+    const tbody = document.getElementById('log-body');
+    let logs = allLogs;
+
+    if (activeFilter === 'taken') {
+      logs = logs.filter(l => l.action === 'taken');
+    } else if (activeFilter === 'uptrend' || activeFilter === 'downtrend') {
+      logs = logs.filter(l => l.trend === activeFilter);
+    }
+
+    if (logs.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; color:var(--text-dim); padding:20px;">No entries match this filter</td></tr>`;
+      return;
+    }
+
+    tbody.innerHTML = logs.map(l => {
+      const trendClass = l.trend === 'uptrend' ? 'up' : l.trend === 'downtrend' ? 'down' : 'skip';
+      const actionClass = l.action === 'taken' ? 'taken' : 'skip';
+      return `
+        <tr>
+          <td>${fmtTime(l.created_at)}</td>
+          <td>${l.price !== null ? Number(l.price).toFixed(2) : '--'}</td>
+          <td>${l.rsi !== null ? Number(l.rsi).toFixed(1) : '--'}</td>
+          <td class="${trendClass}">${(l.trend || '--').toUpperCase()}</td>
+          <td>${(l.signal || 'none').toUpperCase()}</td>
+          <td class="${actionClass}">${l.action === 'taken' ? 'TAKEN' : 'SKIP'}</td>
+        </tr>
+      `;
+    }).join('');
+  }
+
+  document.querySelectorAll('.chip').forEach(chip => {
+    chip.addEventListener('click', () => {
+      document.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
+      chip.classList.add('active');
+      activeFilter = chip.dataset.filter;
+      render();
+    });
+  });
+
+  async function load() {
+    try {
+      const res = await fetch(`/api/logs?limit=500&accountType=${accountType}`);
+      allLogs = await res.json();
+      document.getElementById('status-line').textContent = `Showing last ${allLogs.length} entries · Download CSV for full history`;
+      render();
+    } catch (err) {
+      document.getElementById('status-line').textContent = 'Failed to load history.';
+    }
+  }
+
+  load();
+</script>
+
+</body>
+</html>
