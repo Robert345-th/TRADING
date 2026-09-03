@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Start Demo on your PC</title>
+<title>How to start Demo</title>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@600;700&family=Inter:wght@400;500;600;700&display=swap');
   :root {
@@ -21,7 +21,7 @@
     margin: 0 auto;
     padding: 24px 20px 48px;
   }
-  h1 { font-family: 'Space Grotesk', sans-serif; font-size: 26px; margin: 8px 0 8px; }
+  h1 { font-family: 'Space Grotesk', sans-serif; font-size: 26px; margin: 8px 0 12px; }
   p { color: var(--soft); line-height: 1.55; margin-bottom: 14px; font-size: 15px; }
   .back { color: var(--purple); font-weight: 700; text-decoration: none; font-size: 14px; }
   .btn {
@@ -33,16 +33,19 @@
     text-decoration: none;
     padding: 16px;
     border-radius: 14px;
-    margin: 18px 0 10px;
+    margin: 18px 0 22px;
     font-size: 16px;
   }
-  .btn.secondary { background: white; color: var(--purple); box-shadow: 0 2px 10px rgba(26,26,46,0.08); }
-  ol { padding-left: 20px; color: var(--ink); line-height: 1.7; font-size: 15px; }
-  li { margin-bottom: 10px; }
-  .note {
+  .step {
     background: white;
     border-radius: 14px;
     padding: 14px 16px;
+    margin-bottom: 10px;
+    box-shadow: 0 2px 10px rgba(26,26,46,0.06);
+  }
+  .step b { display: block; font-family: 'Space Grotesk', sans-serif; margin-bottom: 4px; }
+  .step span { color: var(--soft); font-size: 14px; line-height: 1.5; }
+  .note {
     font-size: 13px;
     color: var(--soft);
     margin-top: 18px;
@@ -52,23 +55,31 @@
 </head>
 <body>
   <a class="back" href="/">← Back to Demo</a>
-  <h1>StartDemo is on your PC, not on this page</h1>
-  <p>Download this zip on the Windows computer that already has MetaTrader 5.</p>
-  <a class="btn" href="/StartDemo.zip">Download StartDemo (zip)</a>
-  <p>Then:</p>
-  <ol>
-    <li>Open the zip. Inside you will see a folder <b>MT5-Demo</b>.</li>
-    <li>Windows may hide the <b>.vbs</b> ending. Look for <b>DOUBLE-CLICK-ME</b> or <b>StartDemo</b>.</li>
-    <li>Open MetaTrader 5 and log into your <b>Demo</b> account.</li>
-    <li>Double-click <b>DOUBLE-CLICK-ME</b> (or StartDemo). Leave the black window open.</li>
-    <li>Come back here and refresh. Demo should show <b>your</b> login.</li>
-  </ol>
-  <a class="btn secondary" href="/pc-files/DOUBLE-CLICK-ME.bat">Download only the .bat file</a>
-  <a class="btn secondary" href="/pc-files/StartDemo.vbs">Download only StartDemo.vbs</a>
-  <a class="btn secondary" href="/pc-files/mt5_demo.py">Download mt5_demo.py (needed in the same folder)</a>
+  <h1>How to start it</h1>
+  <p>You start Demo on your computer. Double-click the file. Do not look for a Start button on this website.</p>
+  <a class="btn" href="/StartDemo.zip">1. Download the zip first</a>
+  <div class="step">
+    <b>2. Open MetaTrader 5</b>
+    <span>Log into your Demo account. Leave MT5 open.</span>
+  </div>
+  <div class="step">
+    <b>3. Open the zip</b>
+    <span>You get a folder named MT5-Demo. Open that folder.</span>
+  </div>
+  <div class="step">
+    <b>4. Double-click DOUBLE-CLICK-ME</b>
+    <span>Or double-click StartDemo. That starts it. If Windows says “Windows protected your PC”, click More info, then Run anyway.</span>
+  </div>
+  <div class="step">
+    <b>5. Leave the black window open</b>
+    <span>If you see your demo login and gold prices printing, it is running. Close that window only when you want to stop.</span>
+  </div>
+  <div class="step">
+    <b>6. Refresh this website</b>
+    <span>Demo should say Live and show your login.</span>
+  </div>
   <div class="note">
-    First time: install Python from python.org and tick <b>Add python.exe to PATH</b>, then double-click again.<br><br>
-    GitHub folder if you prefer: <a href="https://github.com/Robert345-th/TRADING/tree/main/pc-bot">github.com/Robert345-th/TRADING/tree/main/pc-bot</a>
+    First time only: install Python from python.org and tick Add python.exe to PATH, then double-click again.
   </div>
 </body>
 </html>
