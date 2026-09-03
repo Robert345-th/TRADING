@@ -245,7 +245,8 @@
 <script>
   const API_URL = '/api/status'; // same origin - dashboard and backend are on the same service
 
-  let currentAccount = localStorage.getItem('accountType') || 'demo';
+  let currentAccount = 'demo';
+  localStorage.setItem('accountType', 'demo');
 
   function setAccountTab(account) {
     currentAccount = account;

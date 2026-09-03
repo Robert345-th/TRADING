@@ -114,7 +114,7 @@
 
   // Get account type from URL (?accountType=demo|real), falling back to localStorage
   const urlParams = new URLSearchParams(window.location.search);
-  const accountType = urlParams.get('accountType') || localStorage.getItem('accountType') || 'demo';
+  const accountType = urlParams.get('accountType') || 'demo';
   localStorage.setItem('accountType', accountType);
 
   document.getElementById('account-label').textContent = `(${accountType.toUpperCase()})`;

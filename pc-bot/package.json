@@ -1,0 +1,10 @@
+{
+  "name": "trade-tracker-pc-bot",
+  "version": "1.0.0",
+  "private": true,
+  "description": "PC trading bot that posts into Robert345-th/TRADING",
+  "main": "bot.js",
+  "scripts": {
+    "start": "node bot.js"
+  }
+}

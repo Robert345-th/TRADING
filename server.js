@@ -19,6 +19,7 @@ app.use(express.static('public'));
 
 const PORT = process.env.PORT || 3000;
 const API_KEY = process.env.API_KEY || 'change-me';
+const { startAutoDemo } = require('./trader');
 
 // DATABASE_URL is injected automatically by whichever host (Render/Railway)
 // you've linked a Postgres database to.
@@ -108,11 +109,14 @@ function checkApiKey(req, res) {
   return true;
 }
 
-// --- Bot pushes live account snapshot here (every 5s) ---
+// Demo is traded by the server itself. Outside bots may only update Real.
 app.post('/api/update', (req, res) => {
   if (!checkApiKey(req, res)) return;
 
   const key = getAccountKey(req);
+  if (key === 'demo') {
+    return res.json({ ok: true, note: 'Demo is auto-traded by the server' });
+  }
   const body = req.body;
   const prev = accountStates[key];
 
@@ -180,6 +184,9 @@ app.get('/api/trades', async (req, res) => {
     res.json(result.rows);
   } catch (err) {
     console.error('Failed to fetch closed trades:', err);
+    if (accountType === 'demo') {
+      return res.json((accountStates.demo.recentTrades || []).slice(0, limit));
+    }
     res.status(500).json({ error: 'Failed to fetch closed trades' });
   }
 });
@@ -220,7 +227,7 @@ app.get('/api/logs', async (req, res) => {
     res.json(result.rows);
   } catch (err) {
     console.error('Failed to fetch logs:', err);
-    res.status(500).json({ error: 'Failed to fetch logs' });
+    res.json([]);
   }
 });
 
@@ -349,6 +356,21 @@ app.get('/api/health', (req, res) => {
   res.json({ status: 'ok' });
 });
 
+function startDemoBot() {
+  if (process.env.AUTO_DEMO === '0') return;
+  startAutoDemo(accountStates, {
+    onClose: (trade) => {
+      if (!process.env.DATABASE_URL) return;
+      pool.query(
+        `INSERT INTO closed_trades (account_type, symbol, type, lot, open_price, close_price, profit)
+         VALUES ('demo', $1, $2, $3, $4, $5, $6)`,
+        [trade.symbol, trade.type, trade.lot, trade.openPrice, trade.closePrice, trade.profit]
+      ).catch((err) => console.error('Failed to insert closed trade:', err.message));
+    },
+  });
+}
+
 app.listen(PORT, () => {
   console.log(`Trade Tracker backend running on port ${PORT}`);
+  startDemoBot();
 });

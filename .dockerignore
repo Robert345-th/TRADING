@@ -1,0 +1,8 @@
+node_modules
+.git
+agent-tools
+data
+*.log
+.env
+pc-bot/state.json
+pc-bot/wscript-state.txt

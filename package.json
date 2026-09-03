@@ -1,10 +1,13 @@
 {
   "name": "trade-tracker",
   "version": "1.0.0",
-  "description": "Live trading dashboard backend with decision log history",
+  "description": "Live trading dashboard with built-in Demo auto-trader",
   "main": "server.js",
   "scripts": {
     "start": "node server.js"
+  },
+  "engines": {
+    "node": ">=18"
   },
   "dependencies": {
     "express": "^4.19.2",
