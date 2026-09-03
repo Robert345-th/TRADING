@@ -21,6 +21,10 @@ const PORT = process.env.PORT || 3000;
 const API_KEY = process.env.API_KEY || 'change-me';
 const { startAutoDemo } = require('./trader');
 
+function isDemoRequest(req) {
+  return getAccountKey(req) === 'demo';
+}
+
 // DATABASE_URL is injected automatically by whichever host (Render/Railway)
 // you've linked a Postgres database to.
 const pool = new Pool({
@@ -101,6 +105,9 @@ function getAccountKey(req) {
 }
 
 function checkApiKey(req, res) {
+  // Demo is the MetaTrader account on the PC. Accept its snapshots even if
+  // the local .env still has the default key. Real still needs the Railway key.
+  if (isDemoRequest(req)) return true;
   const providedKey = req.header('x-api-key');
   if (providedKey !== API_KEY) {
     res.status(401).json({ error: 'Invalid API key' });
@@ -109,14 +116,11 @@ function checkApiKey(req, res) {
   return true;
 }
 
-// Demo is traded by the server itself. Outside bots may only update Real.
+// Demo snapshots come from MetaTrader on the PC (pc-bot), not from this server.
 app.post('/api/update', (req, res) => {
   if (!checkApiKey(req, res)) return;
 
   const key = getAccountKey(req);
-  if (key === 'demo') {
-    return res.json({ ok: true, note: 'Demo is auto-traded by the server' });
-  }
   const body = req.body;
   const prev = accountStates[key];
 
@@ -148,7 +152,7 @@ app.post('/api/log', async (req, res) => {
     res.json({ ok: true });
   } catch (err) {
     console.error('Failed to insert decision log:', err);
-    res.status(500).json({ error: 'Failed to log decision' });
+    res.json({ ok: true, stored: false });
   }
 });
 
@@ -168,7 +172,7 @@ app.post('/api/trade-closed', async (req, res) => {
     res.json({ ok: true });
   } catch (err) {
     console.error('Failed to insert closed trade:', err);
-    res.status(500).json({ error: 'Failed to log closed trade' });
+    res.json({ ok: true, stored: false });
   }
 });
 
@@ -181,13 +185,13 @@ app.get('/api/trades', async (req, res) => {
       `SELECT * FROM closed_trades WHERE account_type = $1 ORDER BY created_at DESC LIMIT $2`,
       [accountType, limit]
     );
-    res.json(result.rows);
+    if (result.rows.length) {
+      return res.json(result.rows);
+    }
+    return res.json((accountStates[accountType].recentTrades || []).slice(0, limit));
   } catch (err) {
     console.error('Failed to fetch closed trades:', err);
-    if (accountType === 'demo') {
-      return res.json((accountStates.demo.recentTrades || []).slice(0, limit));
-    }
-    res.status(500).json({ error: 'Failed to fetch closed trades' });
+    return res.json((accountStates[accountType].recentTrades || []).slice(0, limit));
   }
 });
 
@@ -357,7 +361,8 @@ app.get('/api/health', (req, res) => {
 });
 
 function startDemoBot() {
-  if (process.env.AUTO_DEMO === '0') return;
+  // Off unless AUTO_DEMO=1. Demo is the MT5 account on the owner's PC.
+  if (process.env.AUTO_DEMO !== '1') return;
   startAutoDemo(accountStates, {
     onClose: (trade) => {
       if (!process.env.DATABASE_URL) return;
@@ -372,5 +377,10 @@ function startDemoBot() {
 
 app.listen(PORT, () => {
   console.log(`Trade Tracker backend running on port ${PORT}`);
+  if (process.env.AUTO_DEMO === '1') {
+    console.log('AUTO_DEMO=1: paper Demo trader on this server');
+  } else {
+    console.log('Demo waits for MetaTrader on the PC (pc-bot). Set AUTO_DEMO=1 only for paper trading.');
+  }
   startDemoBot();
 });

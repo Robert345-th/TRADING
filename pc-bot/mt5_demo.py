@@ -15,7 +15,7 @@ import os
 import time
 import urllib.error
 import urllib.request
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 
 try:
     import MetaTrader5 as mt5
@@ -38,12 +38,14 @@ def load_env():
 
 load_env()
 
-TRADING_URL = os.environ.get("TRADING_URL", "http://127.0.0.1:43147").rstrip("/")
+TRADING_URL = os.environ.get("TRADING_URL", "https://trading-production-2c95.up.railway.app").rstrip("/")
 API_KEY = os.environ.get("API_KEY", "change-me")
 ACCOUNT_TYPE = "demo"
 SYMBOL_HINT = os.environ.get("SYMBOL", "XAUUSD")
 LOT = float(os.environ.get("LOT", "0.10"))
 ENABLE_TRADING = os.environ.get("ENABLE_TRADING", "1") != "0"
+ALWAYS_IN = os.environ.get("ALWAYS_IN", "1") != "0"
+CLOSE_MOVE = float(os.environ.get("CLOSE_MOVE", "1.5"))
 MAGIC = 345701
 POLL_SEC = 5
 
@@ -236,6 +238,26 @@ def stats_today():
     }
 
 
+def recent_closes():
+    now = datetime.now(timezone.utc)
+    start = now - timedelta(days=14)
+    deals = mt5.history_deals_get(start, now) or []
+    rows = []
+    for deal in reversed(list(deals)):
+        if deal.entry != mt5.DEAL_ENTRY_OUT:
+            continue
+        rows.append({
+            "symbol": deal.symbol,
+            "type": "buy" if deal.type == mt5.DEAL_TYPE_SELL else "sell",
+            "lot": float(deal.volume),
+            "profit": float(deal.profit),
+            "created_at": datetime.fromtimestamp(deal.time, tz=timezone.utc).isoformat(),
+        })
+        if len(rows) >= 10:
+            break
+    return rows
+
+
 def snapshot(account, position):
     return {
         "account": {
@@ -255,6 +277,7 @@ def snapshot(account, position):
             "currentPrice": position["currentPrice"],
             "pnl": position["pnl"],
         },
+        "recentTrades": recent_closes(),
         "stats": stats_today(),
     }
 
@@ -291,8 +314,11 @@ def main():
 
     symbol = pick_symbol()
     print(f"Symbol {symbol}  -> {TRADING_URL}  tab=Demo  trading={'on' if trading else 'off'}")
+    if trading and ALWAYS_IN:
+        print(f"Always-in gold on YOUR demo login. Close when move >= {CLOSE_MOVE}")
 
     last_log_key = ""
+    last_price = 0.0
 
     try:
         while True:
@@ -313,7 +339,40 @@ def main():
             action = "skip"
             reason = "Watching demo account"
 
-            if trading and ind:
+            def report_close(closed_pos):
+                post_quiet(
+                    "/api/trade-closed",
+                    {
+                        "symbol": closed_pos["symbol"],
+                        "type": closed_pos["type"],
+                        "lot": closed_pos["lot"],
+                        "openPrice": closed_pos["entryPrice"],
+                        "closePrice": price,
+                        "profit": closed_pos["pnl"],
+                    },
+                )
+
+            if trading and ALWAYS_IN:
+                if position and abs(price - position["entryPrice"]) >= CLOSE_MOVE:
+                    closed = position
+                    close_position(position["mt5"], "auto close")
+                    action = "taken"
+                    reason = f"Computer closed {closed['type'].upper()} on your demo"
+                    report_close(closed)
+                    position = open_from_mt5(symbol)
+                if position is None:
+                    side = "buy"
+                    if last_price and price < last_price:
+                        side = "sell"
+                    elif last_price and price > last_price:
+                        side = "buy"
+                    if send_order(symbol, side, LOT, "computer demo"):
+                        action = "taken"
+                        reason = f"Computer {side.upper()} on your demo login"
+                    position = open_from_mt5(symbol)
+                elif action != "taken":
+                    reason = f"Holding your demo {position['type'].upper()}"
+            elif trading and ind:
                 if position:
                     pos = position["mt5"]
                     move = (
@@ -322,36 +381,18 @@ def main():
                         else pos.price_open - price
                     )
                     if move <= -1.5 * ind["atr"]:
+                        closed = position
                         close_position(pos, "stop 1.5 ATR")
                         action = "taken"
-                        reason = f"Computer closed {position['type'].upper()} at stop"
-                        post_quiet(
-                            "/api/trade-closed",
-                            {
-                                "symbol": position["symbol"],
-                                "type": position["type"],
-                                "lot": position["lot"],
-                                "openPrice": position["entryPrice"],
-                                "closePrice": price,
-                                "profit": position["pnl"],
-                            },
-                        )
+                        reason = f"Computer closed {closed['type'].upper()} at stop"
+                        report_close(closed)
                         position = open_from_mt5(symbol)
                     elif move >= 2 * ind["atr"]:
+                        closed = position
                         close_position(pos, "tp 2 ATR")
                         action = "taken"
-                        reason = f"Computer closed {position['type'].upper()} at take-profit"
-                        post_quiet(
-                            "/api/trade-closed",
-                            {
-                                "symbol": position["symbol"],
-                                "type": position["type"],
-                                "lot": position["lot"],
-                                "openPrice": position["entryPrice"],
-                                "closePrice": price,
-                                "profit": position["pnl"],
-                            },
-                        )
+                        reason = f"Computer closed {closed['type'].upper()} at take-profit"
+                        report_close(closed)
                         position = open_from_mt5(symbol)
                 if position is None and ind["signal"] in ("buy", "sell"):
                     if send_order(symbol, ind["signal"], LOT, "computer demo"):
@@ -374,22 +415,25 @@ def main():
             elif not ind:
                 reason = "Warming up MT5 candles"
 
+            last_price = price or last_price
+
             post("/api/update", snapshot(account, position))
 
             log_key = f"{action}|{(ind or {}).get('signal')}|{reason}"
-            if log_key != last_log_key and ind:
+            if log_key != last_log_key:
                 last_log_key = log_key
+                indicators = ind or {}
                 post_quiet(
                     "/api/log",
                     {
                         "symbol": symbol,
                         "price": price,
-                        "emaFast": ind["emaFast"],
-                        "emaSlow": ind["emaSlow"],
-                        "atr": ind["atr"],
-                        "rsi": ind["rsi"],
-                        "trend": ind["trend"],
-                        "signal": ind["signal"],
+                        "emaFast": indicators.get("emaFast"),
+                        "emaSlow": indicators.get("emaSlow"),
+                        "atr": indicators.get("atr"),
+                        "rsi": indicators.get("rsi"),
+                        "trend": indicators.get("trend"),
+                        "signal": indicators.get("signal") or "none",
                         "action": action,
                         "reason": reason,
                     },

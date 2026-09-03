@@ -1,24 +1,31 @@
 # Trade Tracker
 
-Open the site. **Demo trades by itself** on live gold. You do not click Buy/Sell and you do not run a second program.
+Dashboard for the **MetaTrader 5 demo on your computer**. The website shows that account. It does not invent an `AUTO-DEMO` login.
 
 Live: https://trading-production-2c95.up.railway.app
 
-The server reads XAUUSD from `https://xaus.com/api/v1/spot` every 5 seconds, opens a paper position, and closes when gold moves $1.50. It always re-enters. Starting Demo balance is $10,000.
+The site cannot open MT5 for you. On the Windows PC:
+
+1. Open MetaTrader 5 and log into **Demo**.
+2. Double-click `pc-bot/StartDemo.vbs`.
+3. Leave that window open, then refresh the site → **Demo**.
+
+You should see **your demo login and balance**. Gold trades on that account by itself while the window is running.
 
 ## Railway
 
-This repo is what Railway deploys. After a push to `main`, Railway rebuilds automatically if the project is connected to [Robert345-th/TRADING](https://github.com/Robert345-th/TRADING).
+This repo is what Railway deploys. After a push to `main`, the dashboard rebuilds.
 
-- `PORT` is set by Railway. Do not add `AUTO_DEMO=0` (that would stop the trader).
-- `API_KEY` is unused by auto-Demo. Real-tab updates still need it if you send `/api/update`.
-- `DATABASE_URL` is optional (trade history only). Live snapshot works in memory.
+- Do **not** set `AUTO_DEMO=1` (that turns the fake paper Demo back on).
+- `PORT` is set by Railway.
+- `API_KEY` is only required for the **Real** tab.
+- `DATABASE_URL` is optional (history). Live snapshot works without it.
 
-## Run locally
+## Run the dashboard locally
 
 ```bash
 npm install
 npm start
 ```
 
-Open http://127.0.0.1:3000 (or `PORT`).
+Open http://127.0.0.1:3000. Demo still stays empty until `pc-bot` on Windows is posting.

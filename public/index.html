@@ -189,7 +189,7 @@
   </button>
 
   <div class="hero-card">
-    <div class="hero-label">Account Balance</div>
+    <div class="hero-label" id="hero-label">Your MT5 demo</div>
     <div class="hero-value" id="balance-value">--</div>
     <div class="hero-change" id="balance-change">-- today</div>
   </div>
@@ -240,7 +240,7 @@
     </a>
   </div>
 
-  <div class="footer-note" id="footer-note">Waiting for data from your bot…</div>
+  <div class="footer-note" id="footer-note">Open MetaTrader 5 on your PC (Demo login), then double-click pc-bot\StartDemo.vbs</div>
 
 <script>
   const API_URL = '/api/status'; // same origin - dashboard and backend are on the same service
@@ -286,12 +286,22 @@
         livePill.classList.add('offline');
       }
 
+      const login = data.account && data.account.login;
+      if (data.connected && login) {
+        document.getElementById('hero-label').textContent =
+          `${currentAccount === 'real' ? 'Real' : 'Demo'} · ${login}`;
+      } else {
+        document.getElementById('hero-label').textContent = currentAccount === 'real'
+          ? 'Waiting for Real account'
+          : 'Waiting for MetaTrader on your PC';
+      }
+
       // Balance
-      document.getElementById('balance-value').textContent = fmtMoney(data.account.balance);
-      document.getElementById('stat-equity').textContent = fmtMoney(data.account.equity);
-      document.getElementById('stat-margin').textContent = fmtMoney(data.account.freeMargin);
-      document.getElementById('stat-winrate').textContent = (data.stats.winRateToday ?? 0) + '%';
-      document.getElementById('stat-trades').textContent = (data.stats.tradesToday ?? 0) + ' today';
+      document.getElementById('balance-value').textContent = data.connected ? fmtMoney(data.account.balance) : '--';
+      document.getElementById('stat-equity').textContent = data.connected ? fmtMoney(data.account.equity) : '--';
+      document.getElementById('stat-margin').textContent = data.connected ? fmtMoney(data.account.freeMargin) : '--';
+      document.getElementById('stat-winrate').textContent = data.connected ? ((data.stats.winRateToday ?? 0) + '%') : '--';
+      document.getElementById('stat-trades').textContent = data.connected ? ((data.stats.tradesToday ?? 0) + ' today') : '--';
 
       // Open position
       const posContainer = document.getElementById('position-container');
@@ -316,6 +326,10 @@
             </div>
           </div>
         `;
+      } else if (!data.connected) {
+        posContainer.innerHTML = currentAccount === 'real'
+          ? `<div class="empty-state">Real account is offline</div>`
+          : `<div class="empty-state">No MT5 demo connected. Open MetaTrader 5 on your computer, log into Demo, then start pc-bot\\StartDemo.vbs</div>`;
       } else {
         posContainer.innerHTML = `<div class="empty-state">No open position right now</div>`;
       }
@@ -350,8 +364,11 @@
         historyContainer.innerHTML = `<div class="empty-state">No trades yet</div>`;
       }
 
-      document.getElementById('footer-note').textContent =
-        data.lastUpdated ? `Last update: ${fmtTime(data.lastUpdated)} · Updates every 5s` : 'Waiting for data from your bot…';
+      document.getElementById('footer-note').textContent = data.connected
+        ? `Last update: ${fmtTime(data.lastUpdated)} · updates every 5s`
+        : currentAccount === 'real'
+          ? 'Real account is waiting for a bot'
+          : 'Open MetaTrader 5 on your PC (Demo login), then double-click pc-bot\\StartDemo.vbs';
 
     } catch (err) {
       document.getElementById('live-pill').textContent = 'Offline';
