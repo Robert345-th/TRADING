@@ -18,23 +18,10 @@ If fso.FileExists(srcPy) Then
   fso.CopyFile srcPy, destPy, True
 End If
 
-If Not fso.FileExists(destPy) Then
-  code = sh.Run("cmd /c curl.exe -L --fail -o """ & destPy & """ """ & pyUrl & """", 0, True)
-  If code <> 0 Or Not fso.FileExists(destPy) Then
-    On Error Resume Next
-    Set http = CreateObject("MSXML2.XMLHTTP")
-    http.Open "GET", pyUrl, False
-    http.Send
-    If http.Status = 200 Then
-      Set stream = CreateObject("ADODB.Stream")
-      stream.Type = 1
-      stream.Open
-      stream.Write http.ResponseBody
-      stream.SaveToFile destPy, 2
-      stream.Close
-    End If
-    On Error GoTo 0
-  End If
+' Always refresh from the live site so trading fixes apply.
+code = sh.Run("cmd /c curl.exe -L --fail -o """ & destPy & """ """ & pyUrl & """", 0, True)
+If (code <> 0 Or Not fso.FileExists(destPy)) And fso.FileExists(srcPy) Then
+  fso.CopyFile srcPy, destPy, True
 End If
 
 If Not fso.FileExists(destPy) Then

@@ -42,14 +42,15 @@ TRADING_URL = os.environ.get("TRADING_URL", "https://trading-production-2c95.up.
 API_KEY = os.environ.get("API_KEY", "change-me")
 ACCOUNT_TYPE = "demo"
 SYMBOL_HINT = os.environ.get("SYMBOL", "XAUUSD")
-LOT = float(os.environ.get("LOT", "0.10"))
+LOT = float(os.environ.get("LOT", "0.01"))
 ENABLE_TRADING = os.environ.get("ENABLE_TRADING", "1") != "0"
 ALWAYS_IN = os.environ.get("ALWAYS_IN", "1") != "0"
 CLOSE_MOVE = float(os.environ.get("CLOSE_MOVE", "1.5"))
 MAGIC = 345701
 POLL_SEC = 5
 
-ACCOUNT_TRADE_MODE_DEMO = 1
+# MQL5: DEMO=0, CONTEST=1, REAL=2. Never treat DEMO as "not demo".
+ACCOUNT_TRADE_MODE_REAL = 2
 
 
 def post(path, body):
@@ -194,7 +195,9 @@ def send_order(symbol, side, volume, comment):
     }
     result = mt5.order_send(request)
     if result is None or result.retcode != mt5.TRADE_RETCODE_DONE:
-        print(f"warn order failed: {result}")
+        err = mt5.last_error()
+        print(f"warn order failed: {result}  last_error={err}")
+        print("If AutoTrading is red in MT5, click the AutoTrading button so it turns green.")
         return False
     print(f"MT5 demo {side} {volume} {symbol} @ {price}")
     return True
@@ -302,15 +305,24 @@ def main():
         mt5.shutdown()
         raise SystemExit("MT5 has no account. Log into a DEMO account, then retry.")
 
-    if account.trade_mode != ACCOUNT_TRADE_MODE_DEMO:
+    if mt5 is not None:
+        try:
+            ACCOUNT_TRADE_MODE_REAL = int(mt5.ACCOUNT_TRADE_MODE_REAL)
+        except Exception:
+            ACCOUNT_TRADE_MODE_REAL = 2
+
+    if account.trade_mode == ACCOUNT_TRADE_MODE_REAL:
         print(
-            f"Logged into login {account.login} but it is not a demo account. "
-            "Switch MT5 to your DEMO login. This script will only report, not trade."
+            f"Login {account.login} is a REAL account. "
+            "This Demo starter will only report, not send orders."
         )
         trading = False
     else:
         trading = ENABLE_TRADING
-        print(f"Connected MT5 DEMO login {account.login}  server={account.server}")
+        print(
+            f"Connected MT5 login {account.login}  server={account.server}  "
+            f"trade_mode={account.trade_mode}  trading={'on' if trading else 'off'}"
+        )
 
     symbol = pick_symbol()
     print(f"Symbol {symbol}  -> {TRADING_URL}  tab=Demo  trading={'on' if trading else 'off'}")

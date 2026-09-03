@@ -5,9 +5,8 @@ set "URL=https://trading-production-2c95.up.railway.app/pc-files/mt5_demo.py"
 if not exist "%INSTALL%" mkdir "%INSTALL%"
 
 if exist "%~dp0mt5_demo.py" copy /Y "%~dp0mt5_demo.py" "%INSTALL%\mt5_demo.py" >nul
-if not exist "%INSTALL%\mt5_demo.py" (
-  curl.exe -L --fail -o "%INSTALL%\mt5_demo.py" "%URL%" 2>nul
-)
+curl.exe -L --fail -o "%INSTALL%\mt5_demo.py" "%URL%" 2>nul
+if not exist "%INSTALL%\mt5_demo.py" if exist "%~dp0mt5_demo.py" copy /Y "%~dp0mt5_demo.py" "%INSTALL%\mt5_demo.py" >nul
 
 if not exist "%INSTALL%\mt5_demo.py" (
   echo Could not save the trader file.
