@@ -45,41 +45,41 @@
   }
   .step b { display: block; font-family: 'Space Grotesk', sans-serif; margin-bottom: 4px; }
   .step span { color: var(--soft); font-size: 14px; line-height: 1.5; }
-  .note {
-    font-size: 13px;
-    color: var(--soft);
-    margin-top: 18px;
+  .warn {
+    background: #fff4e5;
+    color: #7a4b00;
+    border-radius: 14px;
+    padding: 14px 16px;
+    font-size: 14px;
     line-height: 1.5;
+    margin-bottom: 16px;
   }
 </style>
 </head>
 <body>
   <a class="back" href="/">← Back to Demo</a>
   <h1>How to start it</h1>
-  <p>You start Demo on your computer. Double-click the file. Do not look for a Start button on this website.</p>
-  <a class="btn" href="/StartDemo.zip">1. Download the zip first</a>
+  <div class="warn">If the address bar contains the word Temp or .zip, you are still inside the zip. Close that window. Right-click the zip in Downloads → Extract All.</div>
+  <a class="btn" href="/StartDemo.zip">Download the zip</a>
   <div class="step">
-    <b>2. Open MetaTrader 5</b>
-    <span>Log into your Demo account. Leave MT5 open.</span>
+    <b>1. Close the zip window</b>
+    <span>Do not run files from inside it.</span>
   </div>
   <div class="step">
-    <b>3. Open the zip</b>
-    <span>You get a folder named MT5-Demo. Open that folder.</span>
+    <b>2. Downloads → right-click the zip → Extract All → Extract</b>
+    <span>That puts a real folder on your PC. Look for MT5-Demo on the Desktop or in Downloads.</span>
   </div>
   <div class="step">
-    <b>4. Double-click DOUBLE-CLICK-ME</b>
-    <span>Or double-click StartDemo. That starts it. If Windows says “Windows protected your PC”, click More info, then Run anyway.</span>
+    <b>3. Open MetaTrader 5 and log into Demo</b>
+    <span>Leave MT5 open.</span>
   </div>
   <div class="step">
-    <b>5. Leave the black window open</b>
-    <span>If you see your demo login and gold prices printing, it is running. Close that window only when you want to stop.</span>
+    <b>4. In the extracted folder, double-click DOUBLE-CLICK-ME</b>
+    <span>If Windows warns you, click More info → Run anyway. Leave the black window open.</span>
   </div>
   <div class="step">
-    <b>6. Refresh this website</b>
-    <span>Demo should say Live and show your login.</span>
-  </div>
-  <div class="note">
-    First time only: install Python from python.org and tick Add python.exe to PATH, then double-click again.
+    <b>5. Refresh the website</b>
+    <span>Demo should say Live and show your login. The files live at C:\Users\YourName\MT5-Demo after it starts.</span>
   </div>
 </body>
 </html>

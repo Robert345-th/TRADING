@@ -1,13 +1,49 @@
-' Starts YOUR MetaTrader 5 DEMO account into the live Trade Tracker site.
-' Double-click this on the Windows PC that has MT5 open.
+' Puts Demo on THIS PC, then starts it.
+' Does not run from inside a zip. Installs to %USERPROFILE%\MT5-Demo
 
 Set sh = CreateObject("WScript.Shell")
 Set fso = CreateObject("Scripting.FileSystemObject")
-folder = fso.GetParentFolderName(WScript.ScriptFullName)
-script = folder & "\mt5_demo.py"
 
-If Not fso.FileExists(script) Then
-  MsgBox "mt5_demo.py is missing in:" & vbCrLf & folder, 16, "MT5 Demo"
+home = sh.ExpandEnvironmentStrings("%USERPROFILE%")
+installDir = home & "\MT5-Demo"
+srcDir = fso.GetParentFolderName(WScript.ScriptFullName)
+pyUrl = "https://trading-production-2c95.up.railway.app/pc-files/mt5_demo.py"
+
+If Not fso.FolderExists(installDir) Then fso.CreateFolder installDir
+
+srcPy = srcDir & "\mt5_demo.py"
+destPy = installDir & "\mt5_demo.py"
+
+If fso.FileExists(srcPy) Then
+  fso.CopyFile srcPy, destPy, True
+End If
+
+If Not fso.FileExists(destPy) Then
+  code = sh.Run("cmd /c curl.exe -L --fail -o """ & destPy & """ """ & pyUrl & """", 0, True)
+  If code <> 0 Or Not fso.FileExists(destPy) Then
+    On Error Resume Next
+    Set http = CreateObject("MSXML2.XMLHTTP")
+    http.Open "GET", pyUrl, False
+    http.Send
+    If http.Status = 200 Then
+      Set stream = CreateObject("ADODB.Stream")
+      stream.Type = 1
+      stream.Open
+      stream.Write http.ResponseBody
+      stream.SaveToFile destPy, 2
+      stream.Close
+    End If
+    On Error GoTo 0
+  End If
+End If
+
+If Not fso.FileExists(destPy) Then
+  MsgBox "Could not save mt5_demo.py to:" & vbCrLf & installDir & vbCrLf & vbCrLf & _
+    "Do this instead:" & vbCrLf & _
+    "1. Close this." & vbCrLf & _
+    "2. In Downloads, RIGHT-CLICK the zip." & vbCrLf & _
+    "3. Click Extract All, then Extract." & vbCrLf & _
+    "4. Open the new folder (not the zip) and double-click DOUBLE-CLICK-ME.", 16, "MT5 Demo"
   WScript.Quit 1
 End If
 
@@ -22,15 +58,14 @@ For Each c In cmds
 Next
 
 If pythonCmd = "" Then
-  MsgBox "This uses the DEMO account already logged into MetaTrader 5 on THIS computer." & vbCrLf & vbCrLf & _
-    "1. Open MetaTrader 5 and log into your DEMO account." & vbCrLf & _
-    "2. Install Python from https://www.python.org/downloads/" & vbCrLf & _
-    "   Tick: Add python.exe to PATH" & vbCrLf & _
-    "3. Double-click StartDemo.vbs again." & vbCrLf & vbCrLf & _
-    "The website cannot see your demo login until this is running.", 64, "MT5 Demo"
+  MsgBox "Python is not installed on this PC." & vbCrLf & vbCrLf & _
+    "1. Open https://www.python.org/downloads/" & vbCrLf & _
+    "2. Install Python. Tick Add python.exe to PATH." & vbCrLf & _
+    "3. Double-click StartDemo again." & vbCrLf & vbCrLf & _
+    "Open MetaTrader 5 on Demo first.", 64, "MT5 Demo"
   WScript.Quit 1
 End If
 
-cmdline = "cmd /k cd /d """ & folder & """ && echo Using your MT5 DEMO account... && " & _
+cmdline = "cmd /k cd /d """ & installDir & """ && echo Demo is installed at " & installDir & " && " & _
   pythonCmd & " -m pip install MetaTrader5 && " & pythonCmd & " mt5_demo.py"
 sh.Run cmdline, 1, False

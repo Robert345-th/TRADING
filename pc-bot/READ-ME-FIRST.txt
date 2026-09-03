@@ -1,0 +1,17 @@
+HOW TO START (Windows)
+
+Do NOT double-click files while the zip is still open.
+That puts you in a Temp folder and it will fail.
+
+1. Close this zip window.
+2. Go to Downloads.
+3. RIGHT-CLICK  MT5-Demo-for-your-PC.zip
+4. Click  Extract All...
+5. Click  Extract
+6. Open the NEW folder (look at the address bar: it must NOT say Temp or .zip)
+7. Double-click  DOUBLE-CLICK-ME
+
+It copies itself to:
+  C:\Users\YOURNAME\MT5-Demo
+
+I cannot put files on your PC from the website. You have to Extract All once.
