@@ -7,7 +7,7 @@ Live: https://trading-production-2c95.up.railway.app
 The site cannot open MT5 for you. On the Windows PC:
 
 1. Open MetaTrader 5 and log into **Demo**.
-2. Double-click `pc-bot/StartDemo.vbs`.
+2. Double-click `pc-bot/StartDemo.vbs` — or on the live site tap **Download StartDemo for your PC**.
 3. Leave that window open, then refresh the site → **Demo**.
 
 You should see **your demo login and balance**. Gold trades on that account by itself while the window is running.

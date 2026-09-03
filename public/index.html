@@ -155,7 +155,19 @@
     background: var(--purple); color: white;
   }
 
-  .footer-note { text-align: center; color: var(--ink-soft); font-size: 11px; padding: 24px 20px 0; line-height: 1.6; }
+  .pc-download {
+    display: block;
+    margin: 16px 20px 0;
+    background: var(--ink);
+    color: white;
+    text-align: center;
+    text-decoration: none;
+    font-weight: 700;
+    font-size: 14px;
+    padding: 14px 16px;
+    border-radius: 14px;
+  }
+  .pc-download small { display: block; font-weight: 500; opacity: 0.75; margin-top: 4px; font-size: 12px; }
 
   .log-card { background: var(--card); border-radius: 18px; box-shadow: 0 2px 10px rgba(26,26,46,0.06); padding: 4px 16px; max-height: 340px; overflow-y: auto; }
   .log-row { padding: 11px 0; border-bottom: 1px solid #F0EEFA; }
@@ -183,6 +195,11 @@
     <button id="tab-demo" class="active">Demo</button>
     <button id="tab-real">Real</button>
   </div>
+
+  <a id="pc-download" class="pc-download" href="/connect.html">
+    Download StartDemo for your PC
+    <small>You will not find StartDemo.vbs on this website until you download it</small>
+  </a>
 
   <button id="install-btn" style="display:none; margin: 12px 20px 0; background: var(--purple); color: white; border: none; border-radius: 12px; padding: 10px 16px; font-family: 'Inter', sans-serif; font-weight: 600; font-size: 13px; width: calc(100% - 40px);">
     ⬇ Install App
@@ -240,7 +257,7 @@
     </a>
   </div>
 
-  <div class="footer-note" id="footer-note">Open MetaTrader 5 on your PC (Demo login), then double-click pc-bot\StartDemo.vbs</div>
+  <div class="footer-note" id="footer-note">StartDemo is a file for your PC. Use Download StartDemo above.</div>
 
 <script>
   const API_URL = '/api/status'; // same origin - dashboard and backend are on the same service
@@ -276,6 +293,9 @@
     try {
       const res = await fetch(`${API_URL}?accountType=${currentAccount}`);
       const data = await res.json();
+
+      document.getElementById('pc-download').style.display =
+        currentAccount === 'demo' && !data.connected ? 'block' : 'none';
 
       const livePill = document.getElementById('live-pill');
       if (data.connected) {
@@ -329,7 +349,7 @@
       } else if (!data.connected) {
         posContainer.innerHTML = currentAccount === 'real'
           ? `<div class="empty-state">Real account is offline</div>`
-          : `<div class="empty-state">No MT5 demo connected. Open MetaTrader 5 on your computer, log into Demo, then start pc-bot\\StartDemo.vbs</div>`;
+          : `<div class="empty-state">Download <a href="/connect.html" style="color:var(--purple);font-weight:700">StartDemo for your PC</a>, open MetaTrader 5 on Demo, then double-click DOUBLE-CLICK-ME</div>`;
       } else {
         posContainer.innerHTML = `<div class="empty-state">No open position right now</div>`;
       }
@@ -368,7 +388,7 @@
         ? `Last update: ${fmtTime(data.lastUpdated)} · updates every 5s`
         : currentAccount === 'real'
           ? 'Real account is waiting for a bot'
-          : 'Open MetaTrader 5 on your PC (Demo login), then double-click pc-bot\\StartDemo.vbs';
+          : 'StartDemo is not on this page. Tap Download StartDemo for your PC';
 
     } catch (err) {
       document.getElementById('live-pill').textContent = 'Offline';
@@ -391,7 +411,7 @@
   });
 
   installBtn.addEventListener('click', async () => {
-    if (!deferredInstallPrompt) return;
+    if (!deferredInstallPrompt || !installBtn) return;
     deferredInstallPrompt.prompt();
     await deferredInstallPrompt.userChoice;
     deferredInstallPrompt = null;

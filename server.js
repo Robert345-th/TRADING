@@ -10,12 +10,27 @@
 
 const express = require('express');
 const cors = require('cors');
+const path = require('path');
 const { Pool } = require('pg');
 
 const app = express();
 app.use(cors());
 app.use(express.json());
 app.use(express.static('public'));
+
+app.get('/StartDemo.zip', (_req, res) => {
+  res.download(
+    path.join(__dirname, 'public', 'mt5-pc.zip'),
+    'MT5-Demo-for-your-PC.zip'
+  );
+});
+
+app.use('/pc-files', express.static(path.join(__dirname, 'pc-bot'), {
+  index: false,
+  setHeaders(res, filePath) {
+    res.setHeader('Content-Disposition', `attachment; filename="${path.basename(filePath)}"`);
+  },
+}));
 
 const PORT = process.env.PORT || 3000;
 const API_KEY = process.env.API_KEY || 'change-me';

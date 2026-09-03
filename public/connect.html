@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Start Demo on your PC</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@600;700&family=Inter:wght@400;500;600;700&display=swap');
+  :root {
+    --purple: #7C5CFC;
+    --ink: #1A1A2E;
+    --soft: #6B6B85;
+    --bg: #F5F3FF;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: Inter, sans-serif;
+    background: var(--bg);
+    color: var(--ink);
+    max-width: 440px;
+    margin: 0 auto;
+    padding: 24px 20px 48px;
+  }
+  h1 { font-family: 'Space Grotesk', sans-serif; font-size: 26px; margin: 8px 0 8px; }
+  p { color: var(--soft); line-height: 1.55; margin-bottom: 14px; font-size: 15px; }
+  .back { color: var(--purple); font-weight: 700; text-decoration: none; font-size: 14px; }
+  .btn {
+    display: block;
+    text-align: center;
+    background: var(--purple);
+    color: white;
+    font-weight: 700;
+    text-decoration: none;
+    padding: 16px;
+    border-radius: 14px;
+    margin: 18px 0 10px;
+    font-size: 16px;
+  }
+  .btn.secondary { background: white; color: var(--purple); box-shadow: 0 2px 10px rgba(26,26,46,0.08); }
+  ol { padding-left: 20px; color: var(--ink); line-height: 1.7; font-size: 15px; }
+  li { margin-bottom: 10px; }
+  .note {
+    background: white;
+    border-radius: 14px;
+    padding: 14px 16px;
+    font-size: 13px;
+    color: var(--soft);
+    margin-top: 18px;
+    line-height: 1.5;
+  }
+</style>
+</head>
+<body>
+  <a class="back" href="/">← Back to Demo</a>
+  <h1>StartDemo is on your PC, not on this page</h1>
+  <p>Download this zip on the Windows computer that already has MetaTrader 5.</p>
+  <a class="btn" href="/StartDemo.zip">Download StartDemo (zip)</a>
+  <p>Then:</p>
+  <ol>
+    <li>Open the zip. Inside you will see a folder <b>MT5-Demo</b>.</li>
+    <li>Windows may hide the <b>.vbs</b> ending. Look for <b>DOUBLE-CLICK-ME</b> or <b>StartDemo</b>.</li>
+    <li>Open MetaTrader 5 and log into your <b>Demo</b> account.</li>
+    <li>Double-click <b>DOUBLE-CLICK-ME</b> (or StartDemo). Leave the black window open.</li>
+    <li>Come back here and refresh. Demo should show <b>your</b> login.</li>
+  </ol>
+  <a class="btn secondary" href="/pc-files/DOUBLE-CLICK-ME.bat">Download only the .bat file</a>
+  <a class="btn secondary" href="/pc-files/StartDemo.vbs">Download only StartDemo.vbs</a>
+  <a class="btn secondary" href="/pc-files/mt5_demo.py">Download mt5_demo.py (needed in the same folder)</a>
+  <div class="note">
+    First time: install Python from python.org and tick <b>Add python.exe to PATH</b>, then double-click again.<br><br>
+    GitHub folder if you prefer: <a href="https://github.com/Robert345-th/TRADING/tree/main/pc-bot">github.com/Robert345-th/TRADING/tree/main/pc-bot</a>
+  </div>
+</body>
+</html>
