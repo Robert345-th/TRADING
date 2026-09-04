@@ -349,7 +349,7 @@
       } else if (!data.connected) {
         posContainer.innerHTML = currentAccount === 'real'
           ? `<div class="empty-state">Real account is offline</div>`
-          : `<div class="empty-state">Download <a href="/connect.html" style="color:var(--purple);font-weight:700">StartDemo for your PC</a>, open MetaTrader 5 on Demo, then double-click DOUBLE-CLICK-ME</div>`;
+          : `<div class="empty-state">PC bot stopped yesterday. Open MT5, click AutoTrading so it is green, then double-click DOUBLE-CLICK-ME and leave the black window open</div>`;
       } else {
         posContainer.innerHTML = `<div class="empty-state">No open position right now</div>`;
       }
@@ -384,11 +384,15 @@
         historyContainer.innerHTML = `<div class="empty-state">No trades yet</div>`;
       }
 
-      document.getElementById('footer-note').textContent = data.connected
-        ? `Last update: ${fmtTime(data.lastUpdated)} · updates every 5s`
-        : currentAccount === 'real'
+      if (data.connected) {
+        document.getElementById('footer-note').textContent = data.note
+          ? `${data.note} · last update ${fmtTime(data.lastUpdated)}`
+          : `Last update: ${fmtTime(data.lastUpdated)} · updates every 5s`;
+      } else {
+        document.getElementById('footer-note').textContent = currentAccount === 'real'
           ? 'Real account is waiting for a bot'
-          : 'StartDemo is not on this page. Tap Download StartDemo for your PC';
+          : 'PC bot is stopped. Open MetaTrader 5, turn AutoTrading green, then double-click DOUBLE-CLICK-ME and leave the black window open.';
+      }
 
     } catch (err) {
       document.getElementById('live-pill').textContent = 'Offline';

@@ -146,6 +146,9 @@ app.post('/api/update', (req, res) => {
     openPosition: body.openPosition || null,
     recentTrades: body.recentTrades || prev.recentTrades,
     stats: body.stats || prev.stats,
+    tradingEnabled: body.tradingEnabled,
+    botVersion: body.botVersion,
+    note: body.note || null,
   };
 
   res.json({ ok: true });
@@ -231,7 +234,16 @@ app.get('/api/trades/cleanup', async (req, res) => {
 // --- Dashboard reads live snapshot ---
 app.get('/api/status', (req, res) => {
   const key = getAccountKey(req);
-  res.json(accountStates[key]);
+  const state = { ...accountStates[key] };
+  if (!state.lastUpdated) {
+    state.connected = false;
+  } else {
+    const ageMs = Date.now() - Date.parse(state.lastUpdated);
+    if (!Number.isFinite(ageMs) || ageMs > 20000) {
+      state.connected = false;
+    }
+  }
+  res.json(state);
 });
 
 // --- Dashboard reads recent decision log entries ---

@@ -43,11 +43,11 @@ API_KEY = os.environ.get("API_KEY", "change-me")
 ACCOUNT_TYPE = "demo"
 SYMBOL_HINT = os.environ.get("SYMBOL", "XAUUSD")
 LOT = float(os.environ.get("LOT", "0.01"))
-ENABLE_TRADING = os.environ.get("ENABLE_TRADING", "1") != "0"
 ALWAYS_IN = os.environ.get("ALWAYS_IN", "1") != "0"
 CLOSE_MOVE = float(os.environ.get("CLOSE_MOVE", "1.5"))
 MAGIC = 345701
 POLL_SEC = 5
+BOT_VERSION = 3
 
 # MQL5: DEMO=0, CONTEST=1, REAL=2. Never treat DEMO as "not demo".
 ACCOUNT_TRADE_MODE_REAL = 2
@@ -181,26 +181,40 @@ def send_order(symbol, side, volume, comment):
         return False
     order_type = mt5.ORDER_TYPE_BUY if side == "buy" else mt5.ORDER_TYPE_SELL
     price = tick.ask if side == "buy" else tick.bid
-    request = {
-        "action": mt5.TRADE_ACTION_DEAL,
-        "symbol": symbol,
-        "volume": volume,
-        "type": order_type,
-        "price": price,
-        "deviation": 30,
-        "magic": MAGIC,
-        "comment": comment,
-        "type_time": mt5.ORDER_TIME_GTC,
-        "type_filling": filling_mode(info),
-    }
-    result = mt5.order_send(request)
-    if result is None or result.retcode != mt5.TRADE_RETCODE_DONE:
-        err = mt5.last_error()
-        print(f"warn order failed: {result}  last_error={err}")
-        print("If AutoTrading is red in MT5, click the AutoTrading button so it turns green.")
-        return False
-    print(f"MT5 demo {side} {volume} {symbol} @ {price}")
-    return True
+    fillings = []
+    for flag, mode in (
+        (1, mt5.ORDER_FILLING_FOK),
+        (2, mt5.ORDER_FILLING_IOC),
+        (4, mt5.ORDER_FILLING_RETURN),
+    ):
+        if info.filling_mode & flag:
+            fillings.append(mode)
+    if not fillings:
+        fillings = [mt5.ORDER_FILLING_IOC, mt5.ORDER_FILLING_FOK, mt5.ORDER_FILLING_RETURN]
+
+    last = None
+    for fill in fillings:
+        request = {
+            "action": mt5.TRADE_ACTION_DEAL,
+            "symbol": symbol,
+            "volume": volume,
+            "type": order_type,
+            "price": price,
+            "deviation": 40,
+            "magic": MAGIC,
+            "comment": comment[:31],
+            "type_time": mt5.ORDER_TIME_GTC,
+            "type_filling": fill,
+        }
+        result = mt5.order_send(request)
+        last = result
+        if result is not None and result.retcode == mt5.TRADE_RETCODE_DONE:
+            print(f"MT5 demo {side} {volume} {symbol} @ {price}")
+            return True
+    err = mt5.last_error()
+    print(f"warn order failed: {last}  last_error={err}")
+    print("If AutoTrading is red in MT5, click AutoTrading so it turns green.")
+    return False
 
 
 def close_position(pos, reason):
@@ -261,7 +275,7 @@ def recent_closes():
     return rows
 
 
-def snapshot(account, position):
+def snapshot(account, position, trading=True, note=""):
     return {
         "account": {
             "login": int(account.login),
@@ -282,6 +296,9 @@ def snapshot(account, position):
         },
         "recentTrades": recent_closes(),
         "stats": stats_today(),
+        "tradingEnabled": bool(trading),
+        "botVersion": BOT_VERSION,
+        "note": note,
     }
 
 
@@ -318,10 +335,10 @@ def main():
         )
         trading = False
     else:
-        trading = ENABLE_TRADING
+        trading = True
         print(
             f"Connected MT5 login {account.login}  server={account.server}  "
-            f"trade_mode={account.trade_mode}  trading={'on' if trading else 'off'}"
+            f"trade_mode={account.trade_mode}  trading=on  bot={BOT_VERSION}"
         )
 
     symbol = pick_symbol()
@@ -350,6 +367,8 @@ def main():
             position = open_from_mt5(symbol)
             action = "skip"
             reason = "Watching demo account"
+            term = mt5.terminal_info()
+            auto_ok = bool(term and getattr(term, "trade_allowed", False))
 
             def report_close(closed_pos):
                 post_quiet(
@@ -364,7 +383,9 @@ def main():
                     },
                 )
 
-            if trading and ALWAYS_IN:
+            if trading and not auto_ok:
+                reason = "Turn on AutoTrading in MT5 (the button must be green)"
+            elif trading and ALWAYS_IN:
                 if position and abs(price - position["entryPrice"]) >= CLOSE_MOVE:
                     closed = position
                     close_position(position["mt5"], "auto close")
@@ -381,6 +402,8 @@ def main():
                     if send_order(symbol, side, LOT, "computer demo"):
                         action = "taken"
                         reason = f"Computer {side.upper()} on your demo login"
+                    else:
+                        reason = "Order failed — click AutoTrading in MT5 so it is green"
                     position = open_from_mt5(symbol)
                 elif action != "taken":
                     reason = f"Holding your demo {position['type'].upper()}"
@@ -429,7 +452,7 @@ def main():
 
             last_price = price or last_price
 
-            post("/api/update", snapshot(account, position))
+            post("/api/update", snapshot(account, position, trading=trading and auto_ok, note=reason))
 
             log_key = f"{action}|{(ind or {}).get('signal')}|{reason}"
             if log_key != last_log_key:
